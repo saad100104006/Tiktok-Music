@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Music</string>
+    <string name="loading">Loading Playlist . . .</string>
+    <string name="try_again">Try again!</string>
+</resources>
