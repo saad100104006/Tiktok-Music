@@ -11,8 +11,7 @@ import app.mocky.music.database.MusicRepository
 import app.mocky.music.modelclass.CurrentMusicDetails
 import app.mocky.music.modelclass.Shorts
 
-class MusicViewModel: ViewModel() {
-    var currentMusicDetails: LiveData<CurrentMusicDetails>? = null
+class MusicViewModel : ViewModel() {
     suspend fun getMusicModelClassObserver(context: Context): MutableLiveData<Shorts> {
         val musicRepository = MusicRepository(context)
 
@@ -20,107 +19,102 @@ class MusicViewModel: ViewModel() {
 
         return musicRepository.getMusicModelClassObserver()
     }
+
     suspend fun readCurrentMusicDetails(context: Context): LiveData<CurrentMusicDetails>? {
         val musicRepository = MusicRepository(context)
         return musicRepository.readCurrentMusicDetails()
     }
-    suspend fun insert(context: Context){
+
+    suspend fun insert(context: Context) {
         val musicRepository = MusicRepository(context)
-        musicRepository.insertCurentMusicDetails(CurrentMusicDetails("00:00","00:00",1f,"0"
-            ," . . . "," . . . ","0","0","0"))
+        musicRepository.insertCurentMusicDetails(
+            CurrentMusicDetails(
+                "00:00", "00:00", 1f, "0", " . . . ", " . . . ", "0", "0", "0"
+            )
+        )
     }
-    suspend fun updateSpeed(context: Context, currentSpeed: String, shorts: Shorts?){
+
+    suspend fun updateSpeed(context: Context, currentSpeed: String, shorts: Shorts?) {
         val musicRepository = MusicRepository(context)
-        val currentMusicDetails =  musicRepository.readCurrentMusicDetailsService()
-        if (currentSpeed.equals("1.0x")){
-           currentMusicDetails!!.speed = 1.5f
-           musicRepository.updateCurrentMusicDetails(currentMusicDetails)
-       }
-        else  if(currentSpeed.equals("1.5x")){
-           currentMusicDetails!!.speed = 2f
-           musicRepository.updateCurrentMusicDetails(currentMusicDetails)
-       }
-        else if(currentSpeed.equals("2.0x")){
-           currentMusicDetails!!.speed = 1f
-           musicRepository.updateCurrentMusicDetails(currentMusicDetails)
-       }
+        val currentMusicDetails = musicRepository.readCurrentMusicDetailsService()
+        if (currentSpeed.equals("1.0x")) {
+            currentMusicDetails!!.speed = 1.5f
+            musicRepository.updateCurrentMusicDetails(currentMusicDetails)
+        } else if (currentSpeed.equals("1.5x")) {
+            currentMusicDetails!!.speed = 2f
+            musicRepository.updateCurrentMusicDetails(currentMusicDetails)
+        } else if (currentSpeed.equals("2.0x")) {
+            currentMusicDetails!!.speed = 1f
+            musicRepository.updateCurrentMusicDetails(currentMusicDetails)
+        }
         //Notify Service
         val intent = Intent(context, MusicService::class.java)
-        intent.putExtra("shorts",shorts)
+        intent.putExtra("shorts", shorts)
         intent.action = "Speed"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
-        }
-        else{
+        } else {
             context.startService(intent)
         }
     }
 
-    fun Pause(context: Context, shorts: Shorts?){
+    fun pauseMusic(context: Context, shorts: Shorts?) {
         val intent = Intent(context, MusicService::class.java)
-        intent.putExtra("shorts",shorts)
+        intent.putExtra("shorts", shorts)
         intent.action = "Pause"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
-        }
-        else{
-            context.startService(intent)
-        }
-    }
-    fun Next(context: Context, shorts: Shorts?){
-        val intent = Intent(context, MusicService::class.java)
-        intent.putExtra("shorts",shorts)
-        intent.action = "Next"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent)
-        }
-        else{
-            context.startService(intent)
-        }
-    }
-    fun Prev(context: Context, shorts: Shorts?){
-        val intent = Intent(context, MusicService::class.java)
-        intent.putExtra("shorts",shorts)
-        intent.action = "Prev"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent)
-        }
-        else{
-            context.startService(intent)
-        }
-    }
-    fun EndAllProcess(context: Context){
-        val intent = Intent(context, MusicService::class.java)
-        context.stopService(intent)
-//        intent.action = "EndAllProcess"
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            context.startForegroundService(intent)
-//        }
-//        else{
-//            context.startService(intent)
-//        }
-    }
-    fun Play(context: Context, shorts: Shorts?){
-        val intent = Intent(context, MusicService::class.java)
-        intent.action = "Play"
-        intent.putExtra("shorts",shorts)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent)
-        }
-        else{
-            context.startService(intent)
-        }
-    }
-    fun StartService(context: Context, shorts: Shorts?){
-        val intent = Intent(context, MusicService::class.java)
-        intent.putExtra("shorts",shorts)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent)
-        }
-        else{
+        } else {
             context.startService(intent)
         }
     }
 
+    fun nextMusic(context: Context, shorts: Shorts?) {
+        val intent = Intent(context, MusicService::class.java)
+        intent.putExtra("shorts", shorts)
+        intent.action = "Next"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    fun previousMusic(context: Context, shorts: Shorts?) {
+        val intent = Intent(context, MusicService::class.java)
+        intent.putExtra("shorts", shorts)
+        intent.action = "Prev"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    fun endAllProcess(context: Context) {
+        val intent = Intent(context, MusicService::class.java)
+        context.stopService(intent)
+    }
+
+    fun playMusic(context: Context, shorts: Shorts?) {
+        val intent = Intent(context, MusicService::class.java)
+        intent.action = "Play"
+        intent.putExtra("shorts", shorts)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    fun startMusicService(context: Context, shorts: Shorts?) {
+        val intent = Intent(context, MusicService::class.java)
+        intent.putExtra("shorts", shorts)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
 
 }

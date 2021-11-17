@@ -25,15 +25,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 
-
-
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    lateinit var viewModel:  MusicViewModel
+    lateinit var viewModel: MusicViewModel
     var isPlaying = true
     var isSongStillLoading = true
     var updateDb = true
-    var shorts:Shorts? =null
+    var shorts: Shorts? = null
     var appExit = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,47 +40,44 @@ class MainActivity : AppCompatActivity() {
         viewModel = MusicViewModel()
         viewModel = ViewModelProvider(this).get(MusicViewModel::class.java)
         setContentView(binding.root)
-        if (checkIfAlreadyhavePermission()){
+        if (checkIfAlreadyhavePermission()) {
             loadAPIData()
-            ViewUpdate()
-            AllClicks()
-            SwipeNavigation()
-        }else{
-            requestPermision()
+            updateView()
+            setupClicks()
+            swipeNavigation()
+        } else {
+            requestPermission()
         }
-
-
-
-
     }
 
-    private fun requestPermision() {
-        ActivityCompat.requestPermissions(this,
-             arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-            1)
+    private fun requestPermission() {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+            1
+        )
     }
 
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun SwipeNavigation() {
-        binding.main.setOnTouchListener(object: OnSwipeTouchListener(this@MainActivity) {
+    private fun swipeNavigation() {
+        binding.main.setOnTouchListener(object : OnSwipeTouchListener(this@MainActivity) {
             override fun onSwipeUp() {
                 super.onSwipeUp()
                 if (!isSongStillLoading) {
-                    viewModel.Next(this@MainActivity, shorts)
+                    viewModel.nextMusic(this@MainActivity, shorts)
                     isPlaying = false
-                }else{
-                    //Next Song still loading, check internet speed
                 }
-
             }
+
             override fun onSwipeDown() {
                 super.onSwipeDown()
-                viewModel.Prev(this@MainActivity,shorts)
+                viewModel.previousMusic(this@MainActivity, shorts)
             }
         })
     }
-    private fun AllClicks() {
+
+    private fun setupClicks() {
         binding.tryAgain.setOnClickListener {
             binding.loadAnim.playAnimation()
             loadAPIData()
@@ -91,126 +86,130 @@ class MainActivity : AppCompatActivity() {
             //Prevent clicking beneath layout
         }
         binding.playPause.setOnClickListener {
-            if (isPlaying){
-                viewModel.Pause(this,shorts)
+            if (isPlaying) {
+                viewModel.pauseMusic(this, shorts)
                 isPlaying = false
-            }
-            else{
-                viewModel.Play(this,shorts)
+            } else {
+                viewModel.playMusic(this, shorts)
                 isPlaying = true
             }
 
         }
         binding.next.setOnClickListener {
             if (!isSongStillLoading) {
-                viewModel.Next(this, shorts)
+                viewModel.nextMusic(this, shorts)
                 isPlaying = false
-            }else{
-                //Next Song still loading, check internet speed
             }
         }
         binding.prev.setOnClickListener {
-            viewModel.Prev(this,shorts)
+            viewModel.previousMusic(this, shorts)
             isPlaying = false
         }
         binding.speed.setOnClickListener {
-            UpdateSpeed(shorts)
+            updateSpeed(shorts)
         }
     }
+
     private fun loadAPIData() {
         lifecycleScope.launch {
             withContext(Dispatchers.Main) {
-                viewModel.getMusicModelClassObserver(this@MainActivity).observe(this@MainActivity, Observer<Shorts>{
-                    if(it != null) {
+                viewModel.getMusicModelClassObserver(this@MainActivity)
+                    .observe(this@MainActivity, Observer<Shorts> {
+                        if (it != null) {
                             binding.loadPlayListLayout.visibility = View.GONE
-                        shorts = it
-                        viewModel.StartService(this@MainActivity,shorts)
+                            shorts = it
+                            viewModel.startMusicService(this@MainActivity, shorts)
 
-                    }
-                    else {
-                        binding.tryAgain.visibility = View.VISIBLE
-                        binding.loadAnim.pauseAnimation()
-                        updateDb = false
-                        Log.d("Data","Failed")
-                    }
-                })
-
-            }
-        }
-    }
-    private fun ViewUpdate() {
-        lifecycleScope.launch {
-            withContext(Dispatchers.Main) {
-        viewModel.readCurrentMusicDetails(this@MainActivity)!!.observe(this@MainActivity, Observer<CurrentMusicDetails>{
-            if(it != null) {
-                binding.currentDuration.text = it.currentTime
-                binding.dateCreated.text = it.date
-                binding.musicDuration.text = it.totalTime
-                binding.musicTitle.text = it.title
-                binding.speed.text = it.speed.toString()+"x"
-                binding.seekBar.progress = it.seekTime.toFloat().toInt()
-                if (it.downloadStatus.equals("1")){
-                    binding.progressCircular.visibility = View.GONE
-                    isSongStillLoading = false
-                }
-                else{
-                    binding.progressCircular.visibility = View.VISIBLE
-                    isSongStillLoading = true
-                }
-                if (it.playStatus.equals("1")){
-                    binding.playPause.background = getDrawable(R.drawable.ic_round_pause_round)
-                     isPlaying = true
-                }
-                else{
-                    binding.playPause.background = getDrawable(R.drawable.ic_round_play_arrow_24)
-                     isPlaying = false
-                }
+                        } else {
+                            binding.tryAgain.visibility = View.VISIBLE
+                            binding.loadAnim.pauseAnimation()
+                            updateDb = false
+                            Log.d("Data", "Failed")
+                        }
+                    })
 
             }
-            else {
-                InsertIntoDB()
-            }
-        })
-            }
         }
     }
-    private fun InsertIntoDB() {
+
+    private fun updateView() {
         lifecycleScope.launch {
             withContext(Dispatchers.Main) {
-        viewModel.insert(this@MainActivity)
+                viewModel.readCurrentMusicDetails(this@MainActivity)!!
+                    .observe(this@MainActivity, Observer<CurrentMusicDetails> {
+                        if (it != null) {
+                            binding.currentDuration.text = it.currentTime
+                            binding.dateCreated.text = it.date
+                            binding.musicDuration.text = it.totalTime
+                            binding.musicTitle.text = it.title
+                            binding.speed.text = it.speed.toString() + "x"
+                            binding.seekBar.progress = it.seekTime.toFloat().toInt()
+                            if (it.downloadStatus == "1") {
+                                binding.progressCircular.visibility = View.GONE
+                                isSongStillLoading = false
+                            } else {
+                                binding.progressCircular.visibility = View.VISIBLE
+                                isSongStillLoading = true
+                            }
+                            if (it.playStatus == "1") {
+                                binding.playPause.background =
+                                    getDrawable(R.drawable.ic_round_pause_round)
+                                isPlaying = true
+                            } else {
+                                binding.playPause.background =
+                                    getDrawable(R.drawable.ic_round_play_arrow_24)
+                                isPlaying = false
+                            }
+
+                        } else {
+                            insertIntoDB()
+                        }
+                    })
             }
         }
     }
-    private fun UpdateSpeed(shorts: Shorts?) {
+
+    private fun insertIntoDB() {
         lifecycleScope.launch {
             withContext(Dispatchers.Main) {
-        viewModel.updateSpeed(this@MainActivity,binding.speed.text.toString(),shorts)
+                viewModel.insert(this@MainActivity)
             }
         }
     }
+
+    private fun updateSpeed(shorts: Shorts?) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.Main) {
+                viewModel.updateSpeed(this@MainActivity, binding.speed.text.toString(), shorts)
+            }
+        }
+    }
+
     override fun onBackPressed() {
-        if (!isPlaying){
-            EndAllProcess()
-        }else if (appExit==0){
+        if (!isPlaying) {
+            endAllProcess()
+        } else if (appExit == 0) {
             appExit++
             Toast.makeText(this@MainActivity, "Press again to exit", Toast.LENGTH_SHORT)
                 .show()
-        }
-        else {
-            EndAllProcess()
+        } else {
+            endAllProcess()
         }
     }
-    private fun EndAllProcess(){
+
+    private fun endAllProcess() {
         lifecycleScope.launch {
             withContext(Dispatchers.Main) {
-                viewModel.EndAllProcess(this@MainActivity)
+                viewModel.endAllProcess(this@MainActivity)
                 finish()
                 exitProcess(0)
             }
         }
     }
+
     private fun checkIfAlreadyhavePermission(): Boolean {
-        val result = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+        val result =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
         return result == PackageManager.PERMISSION_GRANTED
     }
 
@@ -228,9 +227,9 @@ class MainActivity : AppCompatActivity() {
 
                     // permission was granted,
                     loadAPIData()
-                    ViewUpdate()
-                    AllClicks()
-                    SwipeNavigation()
+                    updateView()
+                    setupClicks()
+                    swipeNavigation()
                 } else {
                     Toast.makeText(
                         this@MainActivity,
